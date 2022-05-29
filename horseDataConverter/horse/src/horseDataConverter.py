@@ -8,22 +8,10 @@ from tqdm import tqdm
 from bs4 import BeautifulSoup
 from datetime import datetime
 import numpy as np
-import sys
-
-sys.path.append(
-    os.path.join(
-        os.path.dirname(__file__),
-        '..',
-        '..',
-        '..',
-        'my_packages'
-        )
-    )
-import data_controller
 
 logger = getLogger(__name__)
 
-def convert_html(path:str) -> pd.DataFrame:
+def convert_html(path: str) -> pd.DataFrame:
     """指定されたpathのhtmlから馬データのdataframeを返す
 
     Args:
@@ -134,14 +122,14 @@ def convert_html(path:str) -> pd.DataFrame:
     return convert_horse_table(main_table, soup)
 
 
-def save_csv(save_path, save_data:pd.DataFrame):
+def save_csv(save_path, save_data: pd.DataFrame):
     try:
         save_data.to_csv(save_path)
     except Exception as e:
         logger.error(e)
 
 
-def save_log(save_path, save_data:dict):
+def save_log(save_path, save_data: dict):
     try:
         with open(save_path, "w") as f:
             json.dump(save_data, f, indent=4)
@@ -150,46 +138,92 @@ def save_log(save_path, save_data:dict):
 
 
 
-def main():
-    DRY_RUN = False
-    RAW_DATA_DIR = os.path.join("/nas", "project", "horse", "data", "horse")
-    CSV_DATA_DIR = os.path.join("/nas", "project", "horse", "csvs", "horse")
+def main(is_test: bool) -> dict:
+    """実際に変換する関数
 
-    dc = data_controller.DataController()
-    dc.connect()
+    Args:
+        is_test (bool): テストならTrue。保存先などが変わります
+
+    Returns:
+        dict: 成功したidを失敗したidを返す
+    """
+    IS_TEST = is_test
+    NOW = datetime.now().strftime('%Y-%m-%d-%H-%M')
+    mount_point = os.environ["MOUNT_POINT"]
+    DRY_RUN = False
+    if not IS_TEST:
+        RAW_DATA_DIR = os.path.join(mount_point, "data", "horse")
+        CSV_DATA_DIR = os.path.join(mount_point, "csvs", "horse")
+    else:
+        RAW_DATA_DIR = os.path.join(mount_point, "test", "data", "horse")
+        CSV_DATA_DIR = os.path.join(mount_point, "test", "csvs", "horse")
+
+    HORSE_CSV_DATA_DIR = os.path.join(CSV_DATA_DIR, "data")
+    CSV_LOG_DIR  = os.path.join(CSV_DATA_DIR, "log")
+
+    if not os.path.exists(RAW_DATA_DIR):
+        os.makedirs(RAW_DATA_DIR)
+    if not os.path.exists(HORSE_CSV_DATA_DIR):
+        os.makedirs(HORSE_CSV_DATA_DIR)
+    if not os.path.exists(CSV_LOG_DIR):
+        os.makedirs(CSV_LOG_DIR)
 
     # スクレイピングのログと変換のログを見比べて、まだ変換していない馬のIDを取得する。
     scrape_log_list = [os.path.basename(path) for path in glob.glob(os.path.join(RAW_DATA_DIR, "log", "*"))]
-    convert_log_list = [os.path.basename(path) for path in glob.glob(os.path.join(CSV_DATA_DIR, "log", "*"))]
-
+    convert_log_list = [os.path.basename(path) for path in glob.glob(os.path.join(CSV_LOG_DIR, "*"))]
 
     target_log_list = list(set(scrape_log_list) - set(convert_log_list))
     target_log_path_list = [os.path.join(RAW_DATA_DIR, "log", filename) for filename in target_log_list]
-    log_json_list = []
+
+    log_json_dict = {}
     for path in target_log_path_list:
         with open(path, "r") as f:
             txt = f.read()
             if txt!="":
-                log_json_list.append(json.loads(txt))
-    for log in log_json_list:
+                log_json_dict[path] = json.loads(txt)
+
+    error_path_list = []
+    for path in log_json_dict:
+
+        log = log_json_dict[path]
+
+        splited_path = path.split(os.sep)
+        splited_path[-4] = "csvs"
+        horse_log_path = os.sep.join(splited_path)
 
         target_horse_ids = log["horse_id"]
         logger.info("converting {}".format(log))
-        for horse_id in tqdm(sorted(set(target_horse_ids))[:100]):
+
+        error_is_list = []
+        success_id_list = []
+        for horse_id in tqdm(sorted(set(target_horse_ids))):
             raw_data_list = glob.glob(os.path.join(RAW_DATA_DIR, "data", horse_id, "*"))
             raw_data_path = sorted(raw_data_list)[-1]
             try:
-                if DRY_RUN:
-                    pass
-                else:
+                save_dir_path = os.path.join(HORSE_CSV_DATA_DIR, horse_id)
+                if not os.path.exists(save_dir_path):
+                    os.makedirs(save_dir_path)
+
+                if not DRY_RUN:
                     table = convert_html(raw_data_path)
-                    dc.save("csvs/horse/data/{}.csv".format(horse_id),table)
-                    input()
+                    table.to_csv(os.path.join(save_dir_path, "{}.csv".format(NOW)), index=False, header=True)
+                else:
+                    pass
+                success_id_list.append(horse_id)
+
             except Exception as e:
                 print(raw_data_path)
+                error_path_list.append(raw_data_path)
                 logger.error(e)
+                error_is_list.append(horse_id)
 
+        result_dict = {
+            "sucess": success_id_list,
+            "failed": error_is_list
+        }
+        save_log(horse_log_path, result_dict)
+    return error_path_list
 
 
 if __name__ == "__main__":
-    main()
+    main(is_test=False)
