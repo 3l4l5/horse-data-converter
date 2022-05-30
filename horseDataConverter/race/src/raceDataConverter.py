@@ -159,7 +159,7 @@ def convertRaceHtml(path):
     return result_table, payback_table
 
 
-def main(is_test):
+def race_data_converter(is_test):
     mount_point = os.environ["MOUNT_POINT"]
     IS_TEST = is_test
 
@@ -202,4 +202,4 @@ def main(is_test):
 
 
 if __name__ == "__main__":
-    main(is_test=True)
+    race_data_converter(is_test=True)

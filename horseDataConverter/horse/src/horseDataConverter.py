@@ -138,7 +138,7 @@ def save_log(save_path, save_data: dict):
 
 
 
-def main(is_test: bool) -> dict:
+def horse_data_converter(is_test: bool) -> dict:
     """実際に変換する関数
 
     Args:
@@ -226,4 +226,4 @@ def main(is_test: bool) -> dict:
 
 
 if __name__ == "__main__":
-    main(is_test=False)
+    horse_data_converter(is_test=False)
