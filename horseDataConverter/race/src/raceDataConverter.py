@@ -60,6 +60,10 @@ def convertRaceHtml(path):
                 ], inplace=True)
 
         # htmlから得られる情報を付加
+        #　日付
+        date_str = soup.find(class_="smalltxt").text.split(" ")[0]
+        date_str = date_str.replace("日", "").replace("月", "/").replace("年", "/")
+        result_table["date"] = date_str
         race_info = soup.find(class_="racedata").p.span.string.split("/")
         # 競馬場の名前を取得
         result_table["racecourse"] = soup.find(class_="race_place").find(class_="active").string
