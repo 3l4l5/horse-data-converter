@@ -9,12 +9,12 @@ RUN apt-get update && \
     python3\
     python-pip
 
-ENV WORKDIR /horseDataScraper/
+ENV WORKDIR /horseDataConverter/
 
 WORKDIR ${WORKDIR}
 
 COPY ./requirements.txt ${WORKDIR}
-COPY ./horseDataScraper/ ${WORKDIR}
+COPY ./horseDataConverter/ ${WORKDIR}
 
 RUN pip install -r requirements.txt
-CMD python data_scraper.py
+CMD python data_converter.py
