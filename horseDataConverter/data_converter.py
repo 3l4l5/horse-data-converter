@@ -20,8 +20,7 @@ def slack_notifier(text):
 if __name__ == "__main__":
     IS_TEST = False
 
-    if IS_TEST:
-        slack_notifier("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓this message is test↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓")
+    if IS_TEST: slack_notifier("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓this message is test↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓")
     print("converting race data")
     race_convert_error_dict = race_data_converter(is_test=IS_TEST)
 
@@ -51,5 +50,4 @@ if __name__ == "__main__":
     """.format(len(peds_convert_error_dict["success_id_list"]))
 
     slack_notifier(peds_message)
-    if IS_TEST:
-        slack_notifier("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑this message is test↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑")
+    if IS_TEST: slack_notifier("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑this message is test↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑")
