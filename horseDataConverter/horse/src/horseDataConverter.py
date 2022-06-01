@@ -225,5 +225,66 @@ def horse_data_converter(is_test: bool) -> dict:
     return error_path_list
 
 
+def horse_data_converter(is_test: bool) -> dict:
+    """実際に変換する関数
+
+    Args:
+        is_test (bool): テストならTrue。保存先などが変わります
+
+    Returns:
+        dict: 成功したidを失敗したidを返す
+    """
+    mount_point = os.environ["MOUNT_POINT"]
+    IS_TEST = is_test
+    NOW = datetime.now().strftime('%Y-%m-%d-%H-%M')
+    DRY_RUN = False
+    if not IS_TEST:
+        RAW_DATA_DIR = os.path.join(mount_point, "data", "horse")
+        CSV_DATA_DIR = os.path.join(mount_point, "csvs", "horse")
+    else:
+        RAW_DATA_DIR = os.path.join(mount_point, "test", "data", "horse")
+        CSV_DATA_DIR = os.path.join(mount_point, "test", "csvs", "horse")
+
+    HORSE_CSV_DATA_DIR = os.path.join(CSV_DATA_DIR, "data")
+    CSV_LOG_DIR  = os.path.join(CSV_DATA_DIR, "log")
+
+    if not os.path.exists(RAW_DATA_DIR):
+        os.makedirs(RAW_DATA_DIR)
+    if not os.path.exists(HORSE_CSV_DATA_DIR):
+        os.makedirs(HORSE_CSV_DATA_DIR)
+    if not os.path.exists(CSV_LOG_DIR):
+        os.makedirs(CSV_LOG_DIR)
+
+    all_horse_dir_list = glob.glob(os.path.join(RAW_DATA_DIR, "data", "*"))
+    success_id_list = []
+    error_id_list = []
+
+    for horse_dir in tqdm(all_horse_dir_list):
+        horse_id = horse_dir.split(os.sep)[-1]
+        html_path_list = glob.glob(os.path.join(horse_dir, "*"))
+        ratest_html_path = sorted(html_path_list)[-1]
+        ratest_csv_path = ratest_html_path.replace("/data/horse", "/csvs/horse")
+        save_dir_name = "/".join(ratest_csv_path.split(os.sep)[:-1])
+        if not os.path.exists(ratest_csv_path):
+            if not os.path.exists(save_dir_name):
+                os.makedirs(save_dir_name)
+                try:
+                    table = convert_html(ratest_html_path)
+                    table.to_csv(ratest_csv_path, index=False, header=True)
+                    success_id_list.append(horse_id)
+                except Exception as e:
+                    logger.error(e)
+                    print(horse_id)
+                    error_id_list.append(horse_id)
+
+    result_dict = {
+        "sucess": success_id_list,
+        "failed": error_id_list
+        }
+    with open(os.path.join(CSV_LOG_DIR, NOW+".json"), "w") as f:
+        json.dump(result_dict, f, indent=4)
+    return result_dict
+
+
 if __name__ == "__main__":
-    horse_data_converter(is_test=False)
+    horse_data_converter(is_test=True)
