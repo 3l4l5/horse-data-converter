@@ -16,5 +16,6 @@ WORKDIR ${WORKDIR}
 COPY ./requirements.txt ${WORKDIR}
 COPY ./horseDataConverter/ ${WORKDIR}
 
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 CMD python data_converter.py
