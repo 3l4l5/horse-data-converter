@@ -262,8 +262,9 @@ def horse_data_converter(is_test: bool) -> dict:
     for horse_dir in tqdm(all_horse_dir_list):
         horse_id = horse_dir.split(os.sep)[-1]
         html_path_list = glob.glob(os.path.join(horse_dir, "*"))
+        # NOTE: horseの情報の中で最新のものを取得
         ratest_html_path = sorted(html_path_list)[-1]
-        ratest_csv_path = ratest_html_path.replace("/data/horse", "/csvs/horse")
+        ratest_csv_path = ratest_html_path.replace("/data/horse", "/csvs/horse").replace(".html", ".csv")
         save_dir_name = "/".join(ratest_csv_path.split(os.sep)[:-1])
         if not os.path.exists(ratest_csv_path):
             if not os.path.exists(save_dir_name):
